@@ -7,6 +7,7 @@ This module contains test cases for the module netmonitor.commons.
 import time
 from multiprocessing import Process
 import psutil
+import pytest
 import netmonitor.commons as com
 
 
@@ -21,8 +22,9 @@ def test_connection_snapshot():
 
     # Check column names
     assert "timestamp" in con_frame1.columns
-    assert "raddr" in con_frame1.columns
-    assert "raddr_port" in con_frame1.columns
+    assert "ip_address" in con_frame1.columns
+    assert "port" in con_frame1.columns
+    assert "ip_local" in con_frame1.columns
     assert "pid" in con_frame1.columns
     assert "status" in con_frame1.columns
 
@@ -38,8 +40,9 @@ def test_connection_snapshot():
                        psutil.CONN_NONE, psutil.CONN_SYN_RECV,
                        psutil.CONN_SYN_SENT, psutil.CONN_TIME_WAIT]
 
-        assert con_frame1["raddr"][0] is not None
-        assert con_frame1["raddr_port"][0] > 0
+        assert con_frame1["ip_address"][0] is not None
+        assert con_frame1["port"][0] > 0
+        assert con_frame1["ip_local"][0] in (True, False)
         assert con_frame1["pid"][0] > 0
         assert con_frame1["status"][0] in status_list
 
@@ -102,13 +105,33 @@ def test_get_process_name():
     assert com.get_process_name(9999999) is None
 
 
+def test_is_local_ip():
+    """
+    Testcase for the function is_local_ip.
+
+    :return: None.
+    """
+    local_ips = ["127.0.0.1", "192.168.8.100", "169.254.153.26"]
+    assert com.is_local_ip("127.0.0.1", local_ips)
+    assert com.is_local_ip("192.168.8.100", local_ips)
+    assert com.is_local_ip("169.254.153.26", local_ips)
+    assert com.is_local_ip("::ffff:169.254.153.26", local_ips)
+    assert com.is_local_ip(list(com.get_local_ips())[0])
+
+    assert not com.is_local_ip("169.254.153.01", local_ips)
+    assert not com.is_local_ip("", local_ips)
+
+    with pytest.raises(TypeError):
+        com.is_local_ip(None, local_ips)
+
+
 def test_get_local_ips():
     """
     Testcase for the function get_local_ips.
 
     :return: None.
     """
-    ips = com.get_local_ips()
+    ips = list(com.get_local_ips())
     assert ips is not None
     assert len(ips) > 0
     assert str(ips[0]).replace(".", "0").isdigit()

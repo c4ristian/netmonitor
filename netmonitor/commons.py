@@ -13,7 +13,7 @@ import urllib3
 
 def get_connection_snapshot():
     """
-    This function returns a snapshot of this machine's remote network
+    This function returns a snapshot of this machine's network
     connections and the corresponding source processes.
 
     Local IP addresses are filtered out. The same is true for connections
@@ -38,17 +38,18 @@ def get_connection_snapshot():
     con_frame["pid"] = con_frame["pid"].astype("int64")
 
     # Split addresses and ports
-    con_frame['raddr'], con_frame['raddr_port'] = zip(*con_frame["raddr"])
+    con_frame['ip_address'], con_frame['port'] = zip(*con_frame["raddr"])
 
-    # Remove local ip addresses
+    # Indicate whether ip is local
     local_ips = get_local_ips()
-    con_frame = con_frame.loc[~con_frame["raddr"].isin(local_ips)]
+    con_frame["ip_local"] = con_frame["ip_address"].apply(
+        is_local_ip, args=(local_ips, ))
 
     # Reset index
     con_frame = con_frame.reset_index(drop=True)
 
     # Return only necessary cols
-    cols = ["timestamp", "raddr", "raddr_port", "pid", "status"]
+    cols = ["timestamp", "ip_address", "port", "ip_local", "pid", "status"]
     return con_frame[cols]
 
 
@@ -108,18 +109,33 @@ def get_process_name(pid: int):
         return None
 
 
+def is_local_ip(ip_address: str, local_ips=None):
+    """
+    This function returns true, if a specific IP address is local.
+
+    :param ip_address: The IP address.
+    :param local_ips: A list or set with local IP addresses. Default is None,
+    in this case the function get_local_ips is called.
+    :return: True if an address is a local IP, False otherwise.
+    """
+    if local_ips is None:
+        local_ips = get_local_ips()
+
+    return any(l in ip_address for l in local_ips)
+
+
 def get_local_ips():
     """
     This function returns the local IP addresses of this machine.
 
-    :return: The local IP addresses as a list.
+    :return: The local IP addresses as a set.
     """
     ips = set()
 
     for line in sc.read_routes():
         ips.add(line[4])
 
-    return list(ips)
+    return ips
 
 
 def get_ip_infos(ip_address: str, pool_manager: urllib3.PoolManager = None):
