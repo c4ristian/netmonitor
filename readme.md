@@ -1,10 +1,8 @@
 # netmonitor
 
 ## What is it?
-This Python library provides tools network monitoring.
-
-## Main Features
-The library offers [common](netmonitor/commons.py) functions, [notebooks](notebooks) and scripts.
+This Python library provides [functions](netmonitor/commons.py), [notebooks](notebooks) 
+and scripts for network monitoring.
 
 ## Where to get it
 The source code is currently hosted on GitHub at:
