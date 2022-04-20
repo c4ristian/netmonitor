@@ -98,7 +98,7 @@ def test_get_process_name():
     :return: None.
     """
     proc = Process()
-    assert com.get_process_name(proc.pid) == "python.exe"
+    assert com.get_process_name(proc.pid).startswith("py")
     assert com.get_process_name(9999999) is None
 
 

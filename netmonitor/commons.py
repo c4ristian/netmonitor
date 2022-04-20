@@ -31,12 +31,13 @@ def get_connection_snapshot():
 
     # Remove empty addresses
     con_frame = con_frame.loc[con_frame["raddr"] != (), :]
+    con_frame = con_frame.loc[con_frame["raddr"] != "", :]
 
     # Remove connections without pid
     con_frame = con_frame.loc[con_frame["pid"] > 0]
+    con_frame["pid"] = con_frame["pid"].astype("int64")
 
     # Split addresses and ports
-    con_frame['laddr'], con_frame['laddr_port'] = zip(*con_frame["laddr"])
     con_frame['raddr'], con_frame['raddr_port'] = zip(*con_frame["raddr"])
 
     # Remove local ip addresses
