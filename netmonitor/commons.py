@@ -14,7 +14,7 @@ import urllib3
 def get_connection_snapshot():
     """
     This function returns a snapshot of this machine's remote network
-    connections and the corresponding processes.
+    connections and the corresponding source processes.
 
     Local IP addresses are filtered out. The same is true for connections
     with inactive source processes. Internally the function psutil.net_connections
@@ -98,7 +98,7 @@ def get_process_name(pid: int):
     This function returns the name of a specific process.
 
     :param pid: The process ID.
-    :return: The name if available otherwise None.
+    :return: The name if available, otherwise None.
     """
     try:
         proc = psutil.Process(pid)
@@ -128,7 +128,7 @@ def get_ip_infos(ip_address: str, pool_manager: urllib3.PoolManager = None):
 
     :param ip_address: The IP address.
     :param pool_manager: The urllib3.PoolManager to use or None.
-    :return: The organisation and country as tuple, if known. Otherwise a tuple with
+    :return: The organisation and country as tuple, if available. Otherwise a tuple with
     Nones is returned.
     """
     if pool_manager is None:
