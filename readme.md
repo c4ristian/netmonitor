@@ -1,8 +1,7 @@
 # netmonitor
 
 ## What is it?
-This Python library provides various tools for monitoring and analysing 
-network connections and traffic of this computer.
+This Python library provides tools network monitoring.
 
 ## Main Features
 The library offers [common](netmonitor/commons.py) functions, [notebooks](notebooks) and scripts.
