@@ -1,0 +1,20 @@
+# YAML for setting up a conda environment for
+# the netmonitor library
+name: netmonitor
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - jupyter
+  - matplotlib
+  - pandas
+  - pip
+  - pyfiglet
+  - pylint
+  - pytest
+  - psutil
+  - python>=3.8.2
+  - scapy
+  - schedule
+  - pip:
+      - urllib3
