@@ -6,6 +6,7 @@ This module contains test cases for the module netmonitor.commons.
 # Imports
 import time
 from multiprocessing import Process
+import netaddr
 import psutil
 import pytest
 import netmonitor.commons as com
@@ -157,3 +158,17 @@ def test_get_ip_infos():
     org, country = com.get_ip_infos("20.54.232.x")
     assert org is None
     assert country is None
+
+
+def test_to_ipv4():
+    """
+    Testcase for the function to_ipv4.
+
+    :return: None.
+    """
+    assert com.to_ipv4("127.0.0.1") == "127.0.0.1"
+    assert com.to_ipv4("::172.5.0.10") == "172.5.0.10"
+    assert com.to_ipv4("::ffff:168.5.1.0") == "168.5.1.0"
+
+    with pytest.raises(netaddr.core.AddrFormatError):
+        com.to_ipv4("x")

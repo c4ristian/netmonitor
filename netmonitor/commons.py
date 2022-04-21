@@ -5,6 +5,7 @@ This module provides common functions related to network connections and traffic
 # Imports
 from datetime import datetime
 import json
+from netaddr import IPAddress
 import pandas as pd
 import psutil
 import scapy.all as sc
@@ -18,6 +19,7 @@ def get_connection_snapshot():
 
     Internally the function psutil.net_connections is used. Its results are transformed
     into a pandas data frame. Connections with inactive source processes are filtered out.
+    IP addresses are converted to ipv4 format.
 
     :return: The snapshot as pandas data frame.
     """
@@ -38,6 +40,9 @@ def get_connection_snapshot():
 
     # Split addresses and ports
     con_frame['ip_address'], con_frame['port'] = zip(*con_frame["raddr"])
+
+    # Transform addresses to ipv4
+    con_frame["ip_address"] = con_frame["ip_address"].apply(to_ipv4)
 
     # Indicate whether ip is local
     local_ips = get_local_ips()
@@ -156,3 +161,14 @@ def get_ip_infos(ip_address: str, pool_manager: urllib3.PoolManager = None):
         return ip_infos["org"], ip_infos["country"]
     except KeyError:
         return None, None
+
+
+def to_ipv4(ip_address: str):
+    """
+    This function transforms a certain IP address into the ipv4 format.
+
+    :param ip_address: The IP address.
+    :return: The ipv4 address.
+    """
+    addr = IPAddress(ip_address)
+    return addr.ipv4().format()
