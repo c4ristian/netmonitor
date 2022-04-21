@@ -16,9 +16,8 @@ def get_connection_snapshot():
     This function returns a snapshot of this machine's network
     connections and the corresponding source processes.
 
-    Local IP addresses are filtered out. The same is true for connections
-    with inactive source processes. Internally the function psutil.net_connections
-    is used. Its results are transformed into a pandas data frame.
+    Internally the function psutil.net_connections is used. Its results are transformed
+    into a pandas data frame. Connections with inactive source processes are filtered out.
 
     :return: The snapshot as pandas data frame.
     """
