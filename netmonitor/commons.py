@@ -136,8 +136,14 @@ def get_local_ips():
     """
     ips = set()
 
+    # Try to get local ips from scapy
     for line in sc.read_routes():
         ips.add(line[4])
+
+    # If scapy is not available, add some defaults
+    if len(ips) == 0:
+        ips.add("127.0.0.1")
+        ips.add("10.0.0.0")
 
     return ips
 
