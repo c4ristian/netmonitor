@@ -44,16 +44,16 @@ def get_connection_snapshot():
     # Transform addresses to ipv4
     con_frame["ip_address"] = con_frame["ip_address"].apply(to_ipv4)
 
-    # Indicate whether ip is local
-    local_ips = get_local_ips()
-    con_frame["ip_local"] = con_frame["ip_address"].apply(
-        is_local_ip, args=(local_ips, ))
+    # Indicate whether ip is private
+    private_ips = get_private_ips()
+    con_frame["ip_private"] = con_frame["ip_address"].apply(
+        is_private_ip, args=(private_ips,))
 
     # Reset index
     con_frame = con_frame.reset_index(drop=True)
 
     # Return only necessary cols
-    cols = ["timestamp", "ip_address", "port", "ip_local", "pid", "status"]
+    cols = ["timestamp", "ip_address", "port", "ip_private", "pid", "status"]
     return con_frame[cols]
 
 
@@ -113,30 +113,30 @@ def get_process_name(pid: int):
         return None
 
 
-def is_local_ip(ip_address: str, local_ips=None):
+def is_private_ip(ip_address: str, private_ips=None):
     """
-    This function returns true, if a specific IP address is local.
+    This function returns true, if a specific IP address is private.
 
     :param ip_address: The IP address.
-    :param local_ips: A list or set with local IP addresses. Default is None,
-    in this case the function get_local_ips is called.
-    :return: True if an address is a local IP, False otherwise.
+    :param private_ips: A list or set with private IP addresses. Default is None,
+    in this case the function get_private_ips is called.
+    :return: True if an address is private, False otherwise.
     """
-    if local_ips is None:
-        local_ips = get_local_ips()
+    if private_ips is None:
+        private_ips = get_private_ips()
 
-    return any(l in ip_address for l in local_ips)
+    return any(l in ip_address for l in private_ips)
 
 
-def get_local_ips():
+def get_private_ips():
     """
-    This function returns the local IP addresses of this machine.
+    This function returns the private IP addresses of this machine.
 
-    :return: The local IP addresses as a set.
+    :return: The private IP addresses as a set.
     """
     ips = set()
 
-    # Try to get local ips from scapy
+    # Try to get private ips from scapy
     for line in sc.read_routes():
         ips.add(line[4])
 
@@ -144,6 +144,7 @@ def get_local_ips():
     if len(ips) == 0:
         ips.add("127.0.0.1")
         ips.add("10.0.0.0")
+        ips.add("0.0.0.1")
 
     return ips
 

@@ -56,7 +56,7 @@ def _parse_cmd_args():
     )
 
     parser.add_argument(
-        '--l', help="include local connections. Default is False",
+        '--l', help="include local/private connections. Default is False",
         action=argparse.BooleanOptionalAction)
 
     parser.add_argument(
@@ -71,14 +71,14 @@ def _parse_cmd_args():
     return args
 
 
-def _capture_connections(file_name: str, include_locals=False,
+def _capture_connections(file_name: str, include_privates=False,
                          look_up_processes=False, look_up_ips=False,
                          write_mode=False):
     """
     This function captures connection snapshots and stores them in a csv file.
 
     :param file_name: The name of the csv file.
-    :param include_locals: True if local IPs shall be included.
+    :param include_privates: True if private IPs shall be included.
     :param look_up_processes: True if process names shall be looked up.
     :param look_up_ips: True if IP infos shall be looked up.
     :param write_mode: True if the file is to be created,
@@ -90,9 +90,9 @@ def _capture_connections(file_name: str, include_locals=False,
     # Get snapshot
     con_frame = com.get_connection_snapshot()
 
-    # Remove local addresses
-    if not include_locals:
-        con_frame = con_frame[~con_frame["ip_local"]].copy()
+    # Remove local/private addresses
+    if not include_privates:
+        con_frame = con_frame[~con_frame["ip_private"]].copy()
 
     # Look up process names
     if look_up_processes:
@@ -131,7 +131,7 @@ def _main():
     every_seconds = int(args.e)
     over_minutes = int(args.o)
     export_file = args.f
-    include_locals = args.l
+    include_privates = args.l
     look_up_processes = args.p
     look_up_ips = args.i
 
@@ -140,14 +140,14 @@ def _main():
     print(banner)
 
     # Capture stats initially
-    _capture_connections(export_file, include_locals=include_locals,
+    _capture_connections(export_file, include_privates=include_privates,
                          look_up_processes=look_up_processes,
                          look_up_ips=look_up_ips,
                          write_mode=True)
 
     # Set up scheduler
     capture = schedule.every(every_seconds).seconds.do(
-        _capture_connections, export_file, include_locals, look_up_processes, look_up_ips)
+        _capture_connections, export_file, include_privates, look_up_processes, look_up_ips)
 
     if over_minutes > 0:
         capture.until(timedelta(minutes=over_minutes))
