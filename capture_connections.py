@@ -92,7 +92,9 @@ def _capture_connections(file_name: str, include_privates=False,
 
     # Remove local/private addresses
     if not include_privates:
-        con_frame = con_frame[~con_frame["ip_private"]].copy()
+        # pylint: disable=C0121
+        # This comparison is ok for pandas
+        con_frame = con_frame[con_frame["ip_private"] == False].copy()
 
     # Look up process names
     if look_up_processes:

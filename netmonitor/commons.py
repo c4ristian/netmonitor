@@ -12,6 +12,10 @@ import scapy.all as sc
 import urllib3
 
 
+# Columns for connection snapshot
+_CONNECTION_COLUMNS = ["timestamp", "ip_address", "port", "ip_private", "pid", "status"]
+
+
 def get_connection_snapshot():
     """
     This function returns a snapshot of this machine's network
@@ -25,7 +29,13 @@ def get_connection_snapshot():
     """
     # Get all network connections
     connections = psutil.net_connections(kind='all')
-    con_frame = pd.DataFrame(connections)
+
+    # Create data frame
+    if len(connections) > 0:
+        con_frame = pd.DataFrame(connections)
+    # If no connections are available, return empty data frame
+    else:
+        return pd.DataFrame(columns=_CONNECTION_COLUMNS)
 
     # Add timestamp
     con_frame["timestamp"] = datetime.now()
@@ -53,8 +63,7 @@ def get_connection_snapshot():
     con_frame = con_frame.reset_index(drop=True)
 
     # Return only necessary cols
-    cols = ["timestamp", "ip_address", "port", "ip_private", "pid", "status"]
-    return con_frame[cols]
+    return con_frame[_CONNECTION_COLUMNS]
 
 
 def get_traffic_snapshot(pernic=True):
