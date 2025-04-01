@@ -5,17 +5,12 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - jupyter
-  - matplotlib
-  - netaddr
   - pandas
   - pip
-  - pyfiglet
   - pylint
   - pytest
   - psutil
   - python>=3.9
   - scapy
-  - schedule
-  - pip:
-      - urllib3
+  - pygobject
+  - gtk3

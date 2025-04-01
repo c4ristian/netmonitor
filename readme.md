@@ -1,8 +1,7 @@
 # netmonitor
 
 ## What is it?
-This Python library provides [functions](netmonitor/commons.py), [notebooks](notebooks) 
-and scripts for network monitoring.
+GKT application to monitor network connections.
 
 ## Where to get it
 The source code is currently hosted on GitHub at:
@@ -20,30 +19,19 @@ conda activate netmonitor
 pytest
 ```
 
-## Code Coverage
-```sh
-pytest --cov
-```
-
 ## Code Quality
 ```sh
 pylint FILENAME.py
 ```
 
-## Run script
+## Run app
 ```sh
-python FILENAME.py
+python app.py
 ```
 
-## Jupyter
-### Install Kernel 
+## Run CLI
 ```sh
-python -m ipykernel install --user --name=netmonitor
-```
-
-### Run Notebooks
-```sh
-jupyter notebook --notebook-dir="./notebooks"
+python snapshot.py --csv
 ```
 
 ## License
