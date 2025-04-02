@@ -26,6 +26,7 @@ class NetmonitorWindow(Gtk.Window):
 
         # Create an empty connections frame
         self.connections = pd.DataFrame(columns=core.CONNECTION_COLUMNS)
+        self.filtered_connections = self.connections.copy()
 
         # Create a Gtk.ListStore with the same number of columns as the DataFrame
         self.liststore = Gtk.ListStore(*(str,) * len(core.CONNECTION_COLUMNS))
@@ -56,9 +57,19 @@ class NetmonitorWindow(Gtk.Window):
         refresh_button = Gtk.Button(label=_REFRESH_TITLE)
         refresh_button.connect("clicked", self._refresh_button_clicked)
 
+        # Create a checkbox for non-remote connections
+        self.non_remote_checkbox = Gtk.CheckButton(label="Non-remote")
+        self.non_remote_checkbox.connect("toggled", self._non_remote_toggled)
+
+        # Create a checkbox for private connections
+        self.private_checkbox = Gtk.CheckButton(label="Private")
+        self.private_checkbox.connect("toggled", self._private_toggled)
+
         # Create a horizontal box and add the button to it
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         hbox.pack_start(refresh_button, False, False, 0)
+        hbox.pack_start(self.non_remote_checkbox, False, False, 0)
+        hbox.pack_start(self.private_checkbox, False, False, 0)
 
         # Create a vertical box and add the horizontal box and scrolled window to it
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -85,7 +96,7 @@ class NetmonitorWindow(Gtk.Window):
         """
         # Get the selected row number and show dialog
         row_number = path.get_indices()[0]
-        self.show_details_dialog(row_number)
+        self._show_details_dialog(row_number)
 
     # pylint: disable=unused-argument
     # Argument is necessary for the function to work
@@ -99,6 +110,86 @@ class NetmonitorWindow(Gtk.Window):
         # Get connections and update the component
         self._load_connections()
         self._update_component()
+
+    def _non_remote_toggled(self, widget):
+        """
+        This function is called when the non-remote checkbox is toggled.
+
+        :param widget: The widget that was toggled.
+        :return: None.
+        """
+        # Update the component
+        self._update_component()
+
+    def _private_toggled(self, widget):
+        """
+        This function is called when the private checkbox is toggled.
+
+        :param widget: The widget that was toggled.
+        :return: None.
+        """
+        # Update the component
+        self._update_component()
+
+    def _show_details_dialog(self, row_number):
+        """
+        This function shows a dialog with connection details.
+
+        :param row_number: The row number of the connection.
+        :return: None.
+        """
+        # Get the selected row
+        row = self.filtered_connections.iloc[row_number]
+
+        # Get connection details
+        org, country = core.get_ip_infos(row['rip'])
+        org = org if org else ""
+        country = country if country else ""
+
+        # Create the details dialog and show it
+        dialog = self._create_details_dialog(row, org, country)
+        dialog.run()
+        dialog.destroy()
+
+    def _create_details_dialog(self, row, org, country):
+        """
+        This function creates a dialog with connection details for a
+        selected row.
+
+        :param row: The selected row.
+        :param org: The organization name.
+        :param country: The country name.
+        :return: The created dialog.
+        """
+        dialog = Gtk.Dialog(title="Connection Details", parent=self, flags=0)
+        dialog.add_button("Close", Gtk.ResponseType.CLOSE)
+
+        labels = [
+            Gtk.Label(label=f"PID: {row['pid']}", selectable=True),
+            Gtk.Label(label=f"Process: {row['proc']}", selectable=True),
+            Gtk.Label(label=f"Status: {row['status']}", selectable=True),
+            Gtk.Label(label=f"Local IP: {row['lip']}", selectable=True),
+            Gtk.Label(label=f"Local Port: {row['lport']}", selectable=True),
+            Gtk.Label(label=f"Remote IP: {row['rip']}", selectable=True),
+            Gtk.Label(label=f"Remote Port: {row['rport']}", selectable=True),
+            Gtk.Label(label=f"Organization: {org}", selectable=True),
+            Gtk.Label(label=f"Country: {country}", selectable=True)
+        ]
+
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+
+        for i, label in enumerate(labels):
+            vbox.pack_start(label, False, False, 0)
+            # Check by index whether to add a separator
+            if i in (2, 5):
+                separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
+                vbox.pack_start(separator, False, False, 0)
+
+        dialog.get_content_area().add(vbox)
+        dialog.set_default_size(350, 300)
+        dialog.show_all()
+
+        return dialog
 
     def _load_connections(self):
         """
@@ -124,61 +215,26 @@ class NetmonitorWindow(Gtk.Window):
         # Sort by rip column in descending order
         self.connections = self.connections.sort_values(by='rip', ascending=False)
 
-    def show_details_dialog(self, row_number):
+    def _filter_connections(self):
         """
-        This function shows a dialog with connection details.
+        This function filters the connections DataFrame based on the state
+        several checkboxes.
 
-        :param row_number: The row number of the connection.
-        :return: None.
+        :return: A filtered DataFrame.
         """
-        # Get the selected row
-        row = self.connections.iloc[row_number]
+        # Copy the connections DataFrame
+        self.filtered_connections = self.connections.copy()
 
-        # Get connection details
-        org, country = core.get_ip_infos(row['rip'])
-        org = org if org else ""
-        country = country if country else ""
+        # Apply filter based on the checkbox state
+        if not self.non_remote_checkbox.get_active():
+            # Filter out all connections where rip is not an empty string
+            self.filtered_connections = self.filtered_connections[
+                self.filtered_connections['rip'].str.len() > 0]
 
-        # Create a dialog to show connection details
-        dialog = Gtk.Dialog(title="Connection Details", parent=self, flags=0)
-        dialog.add_button("Close", Gtk.ResponseType.CLOSE)
-
-        # Create a label for each connection detail, use the column names
-        # and the row data to create the labels
-        pid_label = Gtk.Label(label=f"PID: {row['pid']}", selectable=True)
-        process_label = Gtk.Label(label=f"Process: {row['proc']}", selectable=True)
-        state_label = Gtk.Label(label=f"Status: {row['status']}", selectable=True)
-        lip_label = Gtk.Label(label=f"Local IP: {row['lip']}", selectable=True)
-        lport_label = Gtk.Label(label=f"Local Port: {row['lport']}", selectable=True)
-        rip_label = Gtk.Label(label=f"Remote IP: {row['rip']}", selectable=True)
-        rport_label = Gtk.Label(label=f"Remote Port: {row['rport']}", selectable=True)
-        org_label = Gtk.Label(label=f"Organization: {org}", selectable=True)
-        country_label = Gtk.Label(label=f"Country: {country}", selectable=True)
-
-        # Create a vertical box and add the labels to it
-        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        vbox.pack_start(pid_label, False, False, 0)
-        vbox.pack_start(process_label, False, False, 0)
-        vbox.pack_start(state_label, False, False, 0)
-        vbox.pack_start(Gtk.Separator(), False, False, 0)
-
-        vbox.pack_start(lip_label, False, False, 0)
-        vbox.pack_start(lport_label, False, False, 0)
-        vbox.pack_start(Gtk.Separator(), False, False, 0)
-
-        vbox.pack_start(rip_label, False, False, 0)
-        vbox.pack_start(rport_label, False, False, 0)
-        vbox.pack_start(org_label, False, False, 0)
-        vbox.pack_start(country_label, False, False, 0)
-
-        # Add the vertical box to the dialog
-        dialog.get_content_area().add(vbox)
-        dialog.set_default_size(350, 300)
-        dialog.show_all()
-
-        # Run the dialog
-        dialog.run()
-        dialog.destroy()
+        if not self.private_checkbox.get_active():
+            # Filter out all connections to private remote IPs
+            self.filtered_connections = self.filtered_connections[
+                self.filtered_connections['rpriv'] == 'False']
 
     def _update_component(self):
         """
@@ -186,14 +242,17 @@ class NetmonitorWindow(Gtk.Window):
 
         :return: None.
         """
+        # Filter connections based on the checkbox state
+        self._filter_connections()
+
         # Update the ListStore with connections
         self.liststore.clear()
 
-        for row in self.connections.itertuples(index=False):
+        for row in self.filtered_connections.itertuples(index=False):
             self.liststore.append(list(row))
 
         # Visualize that the column 'rip' is sorted
-        self.treeview.get_column(self.connections.columns.get_loc(
+        self.treeview.get_column(self.filtered_connections.columns.get_loc(
             'rip')).set_sort_indicator(True)
-        self.treeview.get_column(self.connections.columns.get_loc(
+        self.treeview.get_column(self.filtered_connections.columns.get_loc(
             'rip')).set_sort_order(Gtk.SortType.DESCENDING)
