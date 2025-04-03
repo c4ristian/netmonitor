@@ -181,7 +181,7 @@ class NetmonitorWindow(Gtk.Window):
         for i, label in enumerate(labels):
             vbox.pack_start(label, False, False, 0)
             # Check by index whether to add a separator
-            if i in (2, 5):
+            if i in (2, 4):
                 separator = Gtk.Separator(orientation=Gtk.Orientation.HORIZONTAL)
                 vbox.pack_start(separator, False, False, 0)
 
