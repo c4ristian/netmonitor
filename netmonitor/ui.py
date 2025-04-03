@@ -65,11 +65,16 @@ class NetmonitorWindow(Gtk.Window):
         self.private_checkbox = Gtk.CheckButton(label="Private")
         self.private_checkbox.connect("toggled", self._private_toggled)
 
+        # Create a button to export the current view to a CSV file
+        export_button = Gtk.Button(label="Export CSV")
+        export_button.connect("clicked", self._export_to_csv)
+
         # Create a horizontal box and add the button to it
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         hbox.pack_start(refresh_button, False, False, 0)
         hbox.pack_start(self.non_remote_checkbox, False, False, 0)
         hbox.pack_start(self.private_checkbox, False, False, 0)
+        hbox.pack_end(export_button, False, False, 0)
 
         # Create a vertical box and add the horizontal box and scrolled window to it
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
@@ -130,6 +135,32 @@ class NetmonitorWindow(Gtk.Window):
         """
         # Update the component
         self._update_component()
+
+    def _export_to_csv(self, widget):
+        """
+        This function exports the current view to a CSV file.
+
+        :param widget: The widget that was clicked.
+        :return: None.
+        """
+        dialog = Gtk.FileChooserDialog(
+            title="Save CSV", parent=self, action=Gtk.FileChooserAction.SAVE)
+        dialog.add_buttons(
+            Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL,
+            Gtk.STOCK_SAVE, Gtk.ResponseType.ACCEPT)
+
+        filter_csv = Gtk.FileFilter()
+        filter_csv.set_name("CSV files")
+        filter_csv.add_pattern("*.csv")
+        dialog.add_filter(filter_csv)
+        dialog.set_do_overwrite_confirmation(True)
+
+        response = dialog.run()
+        if response == Gtk.ResponseType.ACCEPT:
+            filename = dialog.get_filename()
+            self.filtered_connections.to_csv(filename, index=False)
+
+        dialog.destroy()
 
     def _show_details_dialog(self, row_number):
         """
