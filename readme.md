@@ -29,9 +29,17 @@ pylint FILENAME.py
 python app.py
 ```
 
+```sh
+bash app.sh
+```
+
 ## Run CLI
 ```sh
 python snapshot.py --csv
+```
+
+```sh
+bash snapshot.sh --csv
 ```
 
 ## License
