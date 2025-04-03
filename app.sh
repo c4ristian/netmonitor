@@ -1,5 +1,13 @@
 #!/bin/bash
 # This script runs the netmonitor application in its conda environment.
-# Warnings are suppressed by redirecting stderr to /dev/null.
-# To debug the application run app.py directly.
-conda run --no-capture-output -n netmonitor python app.py 2>/dev/null
+
+# Initialize environment variables
+export PATH="$HOME/miniconda3/bin:$PATH"
+source "$HOME/miniconda3/etc/profile.d/conda.sh"
+export DISPLAY=$DISPLAY
+
+# Set working directory
+cd "$(dirname "$0")" || exit 1
+
+# Activate the conda environment and run the application
+conda run --no-capture-output -n netmonitor python app.py
