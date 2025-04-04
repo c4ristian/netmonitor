@@ -20,18 +20,18 @@ class DataFrameTable(Gtk.TreeView):
     """
     This class represents a table view for displaying a DataFrame.
     """
-    def __init__(self, dataframe):
+    def __init__(self, data_frame):
         super().__init__()
-        self.dataframe = dataframe
+        self.data_frame = data_frame
         self._init_component()
 
-    def set_dataframe(self, dataframe):
+    def set_data_frame(self, data_frame):
         """
         Set the DataFrame to be displayed in the table.
 
-        :param dataframe: The DataFrame to be displayed.
+        :param data_frame: The DataFrame to be displayed.
         """
-        self.dataframe = dataframe
+        self.data_frame = data_frame
         self._update_component()
 
     def _update_component(self):
@@ -42,7 +42,7 @@ class DataFrameTable(Gtk.TreeView):
         self.liststore.clear()
 
         # Append each row of the DataFrame to the ListStore
-        for row in self.dataframe.itertuples(index=False):
+        for row in self.data_frame.itertuples(index=False):
             self.liststore.append(list(row))
 
     def _init_component(self):
@@ -50,9 +50,9 @@ class DataFrameTable(Gtk.TreeView):
         Set up the user interface for the DataFrame table.
         """
         # Create a column for each DataFrame column
-        for i, column_title in enumerate(self.dataframe.columns):
+        for i, column_title in enumerate(self.data_frame.columns):
             # Create a ListStore with the same number of columns as the DataFrame
-            self.liststore = Gtk.ListStore(*(str,) * len(self.dataframe.columns))
+            self.liststore = Gtk.ListStore(*(str,) * len(self.data_frame.columns))
             self.set_model(self.liststore)
 
             renderer = Gtk.CellRendererText()
@@ -301,7 +301,7 @@ class NetmonitorWindow(Gtk.Window):
                 self.filtered_connections['rpriv'] == 'False']
 
         # Update the table with the filtered DataFrame
-        self.table.set_dataframe(self.filtered_connections)
+        self.table.set_data_frame(self.filtered_connections)
 
         # Visualize that the column 'rip' is sorted
         self.table.get_column(self.filtered_connections.columns.get_loc(
