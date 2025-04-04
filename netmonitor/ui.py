@@ -16,6 +16,54 @@ _WINDOW_HEIGHT = 550
 _REFRESH_TITLE = "Refresh"
 
 
+class DataFrameTable(Gtk.TreeView):
+    """
+    This class represents a table view for displaying a DataFrame.
+    """
+    def __init__(self, dataframe):
+        super().__init__()
+        self.dataframe = dataframe
+        self._init_component()
+
+    def set_dataframe(self, dataframe):
+        """
+        Set the DataFrame to be displayed in the table.
+
+        :param dataframe: The DataFrame to be displayed.
+        """
+        self.dataframe = dataframe
+        self._update_component()
+
+    def _update_component(self):
+        """
+        Update the component with the current DataFrame data.
+        """
+        # Clear the ListStore
+        self.liststore.clear()
+
+        # Append each row of the DataFrame to the ListStore
+        for row in self.dataframe.itertuples(index=False):
+            self.liststore.append(list(row))
+
+    def _init_component(self):
+        """
+        Set up the user interface for the DataFrame table.
+        """
+        # Create a column for each DataFrame column
+        for i, column_title in enumerate(self.dataframe.columns):
+            # Create a ListStore with the same number of columns as the DataFrame
+            self.liststore = Gtk.ListStore(*(str,) * len(self.dataframe.columns))
+            self.set_model(self.liststore)
+
+            renderer = Gtk.CellRendererText()
+            renderer.set_property("xalign", 1.0)
+            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
+            column.set_resizable(True)
+            column.set_sort_column_id(i)
+            column.set_min_width(_COLUMN_WIDTH)
+            self.append_column(column)
+
+
 class NetmonitorWindow(Gtk.Window):
     """
     This class represents the main window of the netmonitor application.
@@ -28,30 +76,17 @@ class NetmonitorWindow(Gtk.Window):
         self.connections = pd.DataFrame(columns=core.CONNECTION_COLUMNS)
         self.filtered_connections = self.connections.copy()
 
-        # Create a Gtk.ListStore with the same number of columns as the DataFrame
-        self.liststore = Gtk.ListStore(*(str,) * len(core.CONNECTION_COLUMNS))
-
-        # Create a TreeView and set the model to the ListStore
-        self.treeview = Gtk.TreeView(model=self.liststore)
-
-        # Create a column for each DataFrame column
-        for i, column_title in enumerate(self.connections.columns):
-            renderer = Gtk.CellRendererText()
-            renderer.set_property("xalign", 1.0)
-            column = Gtk.TreeViewColumn(column_title, renderer, text=i)
-            column.set_resizable(True)
-            column.set_sort_column_id(i)
-            column.set_min_width(_COLUMN_WIDTH)
-            self.treeview.append_column(column)
+        # Create a table to show the connections
+        self.table = DataFrameTable(self.filtered_connections)
 
         # When a row is double-clicked open a dialog
         # showing connection details
-        self.treeview.connect("row-activated", self._on_row_activated)
+        self.table.connect("row-activated", self._on_row_activated)
 
         # Add the TreeView to a ScrolledWindow
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_vexpand(True)
-        scrolled_window.add(self.treeview)
+        scrolled_window.add(self.table)
 
         # Create a button to refresh the table
         refresh_button = Gtk.Button(label=_REFRESH_TITLE)
@@ -246,44 +281,30 @@ class NetmonitorWindow(Gtk.Window):
         # Sort by rip column in descending order
         self.connections = self.connections.sort_values(by='rip', ascending=False)
 
-    def _filter_connections(self):
-        """
-        This function filters the connections DataFrame based on the state
-        several checkboxes.
-
-        :return: A filtered DataFrame.
-        """
-        # Copy the connections DataFrame
-        self.filtered_connections = self.connections.copy()
-
-        # Apply filter based on the checkbox state
-        if not self.non_remote_checkbox.get_active():
-            # Filter out all connections where rip is not an empty string
-            self.filtered_connections = self.filtered_connections[
-                self.filtered_connections['rip'].str.len() > 0]
-
-        if not self.private_checkbox.get_active():
-            # Filter out all connections to private remote IPs
-            self.filtered_connections = self.filtered_connections[
-                self.filtered_connections['rpriv'] == 'False']
-
     def _update_component(self):
         """
         This function updates the component on basis of the connections DataFrame.
 
         :return: None.
         """
-        # Filter connections based on the checkbox state
-        self._filter_connections()
+        # Filter the connections based on the checkboxes state
+        self.filtered_connections = self.connections.copy()
 
-        # Update the ListStore with connections
-        self.liststore.clear()
+       # non-remote ips
+        if not self.non_remote_checkbox.get_active():
+            self.filtered_connections = self.filtered_connections[
+                self.filtered_connections['rip'].str.len() > 0]
 
-        for row in self.filtered_connections.itertuples(index=False):
-            self.liststore.append(list(row))
+        # private ips
+        if not self.private_checkbox.get_active():
+            self.filtered_connections = self.filtered_connections[
+                self.filtered_connections['rpriv'] == 'False']
+
+        # Update the table with the filtered DataFrame
+        self.table.set_dataframe(self.filtered_connections)
 
         # Visualize that the column 'rip' is sorted
-        self.treeview.get_column(self.filtered_connections.columns.get_loc(
+        self.table.get_column(self.filtered_connections.columns.get_loc(
             'rip')).set_sort_indicator(True)
-        self.treeview.get_column(self.filtered_connections.columns.get_loc(
+        self.table.get_column(self.filtered_connections.columns.get_loc(
             'rip')).set_sort_order(Gtk.SortType.DESCENDING)
