@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-This script prints a snapshot of the current connections of the system.
+This script prints a snapshot of the current network connections of the system.
 
 Examples
 --------
@@ -15,7 +15,7 @@ from netmonitor import core
 
 def _parse_cmd_args():
     """
-    This function parses the command-line arguments of the program.
+    This function parses the command-line arguments of the script.
 
     :return: The parsed command-line arguments.
     """
