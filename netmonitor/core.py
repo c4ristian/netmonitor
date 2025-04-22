@@ -171,3 +171,38 @@ def get_ip_infos(ip_address: str):
     finally:
         conn.close()
     return result
+
+
+def match_ip_infos(ip_addresses: pd.Series):
+    """
+    This function takes a pandas Series with IP addresses and returns a
+    DataFrame with the organisation and country of each IP address.
+
+    The function uses the get_ip_infos function to retrieve the information
+
+    :param ip_addresses: A pandas Series with IP addresses.
+    :return: A DataFrame with the organisation and country of each IP address.
+    """
+    if not isinstance(ip_addresses, pd.Series):
+        raise AttributeError("ip_addresses must be a pandas Series")
+    if ip_addresses is None or len(ip_addresses) == 0:
+        return pd.DataFrame(columns=["org", "country"])
+    else:
+        original_frame = ip_addresses.to_frame(name="ip")
+
+        # Get unique IP addresses
+        unique_addresses = list(ip_addresses.unique())
+        country = []
+        org = []
+
+        for ip in unique_addresses:
+            org_info, country_info = get_ip_infos(ip)
+            org.append(org_info)
+            country.append(country_info)
+
+        unique_frame = pd.DataFrame({"ip": unique_addresses, "org": org, "country": country})
+
+        # Merge the unique frame with the original frame so that
+        # the original order is preserved
+        merged_frame = pd.merge(original_frame, unique_frame, on="ip", how="left")
+        return merged_frame
