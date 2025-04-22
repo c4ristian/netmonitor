@@ -13,7 +13,6 @@ _WINDOW_TITLE = "netmonitor"
 _COLUMN_WIDTH = 100
 _WINDOW_WIDTH = len(core.CONNECTION_COLUMNS * _COLUMN_WIDTH) * 1.2
 _WINDOW_HEIGHT = 550
-_REFRESH_TITLE = "Refresh"
 
 
 class DataFrameTable(Gtk.TreeView):
@@ -27,16 +26,31 @@ class DataFrameTable(Gtk.TreeView):
 
     def set_data_frame(self, data_frame):
         """
-        Set the DataFrame to be displayed in the table.
+        This method sets the DataFrame to be displayed in the table.
 
         :param data_frame: The DataFrame to be displayed.
+        :return: None.
         """
         self.data_frame = data_frame
         self._update_component()
 
+    def set_column_visibility(self, column_titles, visible):
+        """
+        This method sets the visibility of specific table columns.
+
+        :param column_titles: A list of column titles to show or hide.
+        :param visible: A boolean indicating whether to show (True) or hide (False) the columns.
+        :return: None.
+        """
+        for column in self.get_columns():
+            if column.get_title() in column_titles:
+                column.set_visible(visible)
+
     def _update_component(self):
         """
-        Update the component with the current DataFrame data.
+        This method updates the component with the currently set DataFrame.
+
+        :return: None.
         """
         # Clear the ListStore
         self.liststore.clear()
@@ -47,7 +61,7 @@ class DataFrameTable(Gtk.TreeView):
 
     def _init_component(self):
         """
-        Set up the user interface for the DataFrame table.
+        This method initializes the component.
         """
         # Create a column for each DataFrame column
         for i, column_title in enumerate(self.data_frame.columns):
@@ -89,7 +103,7 @@ class NetmonitorWindow(Gtk.Window):
         scrolled_window.add(self.table)
 
         # Create a button to refresh the table
-        refresh_button = Gtk.Button(label=_REFRESH_TITLE)
+        refresh_button = Gtk.Button(label="Refresh")
         refresh_button.connect("clicked", self._refresh_button_clicked)
 
         # Create a checkbox for non-remote connections
@@ -299,6 +313,9 @@ class NetmonitorWindow(Gtk.Window):
         if not self.private_checkbox.get_active():
             self.filtered_connections = self.filtered_connections[
                 self.filtered_connections['rpriv'] == 'False']
+
+        self.table.set_column_visibility(
+            ["rpriv"], self.private_checkbox.get_active())
 
         # Update the table with the filtered DataFrame
         self.table.set_data_frame(self.filtered_connections)
