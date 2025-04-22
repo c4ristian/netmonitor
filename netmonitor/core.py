@@ -178,7 +178,7 @@ def match_ip_infos(ip_addresses: pd.Series):
     This function takes a pandas Series with IP addresses and returns a
     DataFrame with the organisation and country of each IP address.
 
-    The function uses the get_ip_infos function to retrieve the information
+    The function uses the get_ip_infos function to retrieve the information.
 
     :param ip_addresses: A pandas Series with IP addresses.
     :return: A DataFrame with the organisation and country of each IP address.
