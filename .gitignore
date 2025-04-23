@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.json
 
 # Directories
 .idea
@@ -10,10 +11,7 @@ notebooks/.ipynb_checkpoints
 notebooks/ml/.ipynb_checkpoints
 notebooks/_backup
 tests/.pytest_cache
+tests/*.json
 
 # Other Files
 *.coverage
-data/*.csv
-data/*.png
-data/*.dot
-data/*.html
