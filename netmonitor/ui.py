@@ -80,7 +80,7 @@ class DataFrameTable(Gtk.TreeView):
             self.append_column(column)
 
 
-class NetMonitorToolbar(Gtk.Box):
+class NetmonitorToolbar(Gtk.Box):
     """
     This class represents a toolbar with buttons and checkboxes for controlling
     the NetMonitorWindow.
@@ -146,7 +146,7 @@ class NetmonitorWindow(Gtk.Window):
         scrolled_window.add(self.table)
 
         # Create the control panel and register events
-        self.toolbar = NetMonitorToolbar()
+        self.toolbar = NetmonitorToolbar()
 
         self.toolbar.refresh_button.connect(
             "clicked", self._refresh_button_clicked)
