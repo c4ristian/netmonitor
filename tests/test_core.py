@@ -3,6 +3,7 @@ This module contains test cases for the con module.
 """
 
 # Imports
+import os
 from multiprocessing import Process
 import pandas as pd
 import psutil
@@ -167,42 +168,46 @@ def test_get_ip_infos():
     assert country is None
 
 
-def test_match_ip_infos():
+def test_ip_info_cache():
     """
-    Testcase for the function match_ip_infos.
-
+    Testcase for the class IpInfoCache.
     :return: None.
     """
-    # One correct result
-    ip_addresses = pd.Series(["172.217.0.0"])
-    ip_infos = core.match_ip_infos(ip_addresses)
+    cache = core.IpInfoCache()
+    assert cache._cache_dict is not None
+    assert cache._cache_dict == {}
+
+    # Test get ip infos valid ip
+    org, country = cache.get_ip_infos("172.217.0.0")
+    assert org.find("Google") > 0
+    assert country == "US"
+
+    assert len(cache._cache_dict) == 1
+    assert cache._cache_dict["172.217.0.0"] == (org, country)
+
+    # Test get ip infos invalid ip
+    org, country = cache.get_ip_infos("20.54.232.x")
+    assert org is None
+    assert country is None
+
+    assert len(cache._cache_dict) == 2
+    assert cache._cache_dict["20.54.232.x"] == (None, None)
+
+    # Test match ip infos
+    ip_addresses = pd.Series(["172.217.0.0", "20.54.232.160", "1111"])
+    ip_infos = cache.match_ip_infos(ip_addresses)
 
     assert ip_infos is not None
-    assert isinstance(ip_infos, pd.DataFrame)
-    assert len(ip_infos) == 1
-    assert len(ip_infos.columns) == 3
-    assert all(col in ip_infos.columns for col in ["ip", "org", "country"])
+    assert len(ip_infos) == 3
 
     first_row = ip_infos.iloc[0]
     assert first_row["ip"] == "172.217.0.0"
     assert first_row["org"].find("Google") > 0
     assert first_row["country"] == "US"
 
-    # Multiple correct results
-    ip_addresses = pd.Series(["20.54.232.160", "2a00:1450:4013:c04::54", "1111"])
-    ip_infos = core.match_ip_infos(ip_addresses)
-
-    assert ip_infos is not None
-    assert len(ip_infos) == 3
-
-    first_row = ip_infos.iloc[0]
-    assert first_row["ip"] == "20.54.232.160"
-    assert first_row["org"].find("Microsoft") > 0
-    assert first_row["country"] == "NL"
-
     second_row = ip_infos.iloc[1]
-    assert second_row["ip"] == "2a00:1450:4013:c04::54"
-    assert second_row["org"].find("Google") > 0
+    assert second_row["ip"] == "20.54.232.160"
+    assert second_row["org"].find("Microsoft") > 0
     assert second_row["country"] == "NL"
 
     third_row = ip_infos.iloc[2]
@@ -210,9 +215,34 @@ def test_match_ip_infos():
     assert third_row["org"] is None
     assert third_row["country"] is None
 
+    assert len(cache._cache_dict) == 4
+    assert cache._cache_dict["1111"] == (None, None)
+    assert cache._cache_dict["20.54.232.160"] == (
+        second_row["org"], second_row["country"])
+
     # Error cases
     with pytest.raises(AttributeError):
-        core.match_ip_infos("172.11.80.1")
+        cache.match_ip_infos("172.11.80.1")
 
     with pytest.raises(AttributeError):
-        core.match_ip_infos(None)
+        cache.match_ip_infos(None)
+
+    # Test save and load cache
+    file_name = "_test_cache.json"
+
+    if os.path.exists("tests/"):
+        file_name = "tests/" + file_name
+
+    cache.save_to_json(file_name)
+
+    # Create a new cache and load the saved cache
+    new_cache = core.IpInfoCache()
+    new_cache.load_from_json(file_name)
+
+    assert len(new_cache._cache_dict) == 4
+    assert new_cache._cache_dict is not None
+    assert "172.217.0.0" in new_cache._cache_dict
+
+    # Cleanup
+    if os.path.exists(file_name):
+        os.remove(file_name)

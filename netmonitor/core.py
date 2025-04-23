@@ -173,34 +173,81 @@ def get_ip_infos(ip_address: str):
     return result
 
 
-def match_ip_infos(ip_addresses: pd.Series):
+class IpInfoCache:
     """
-    This function takes a pandas Series with IP addresses and returns a
-    DataFrame with the organisation and country of each IP address.
+    This class is used to cache IP address information.
 
-    The function uses the get_ip_infos function to retrieve the information.
-
-    :param ip_addresses: A pandas Series with IP addresses.
-    :return: A DataFrame with the organisation and country of each IP address.
+    The cache is a dictionary with the IP address as key and the
+    organisation and country as value. The cache is saved to a
+    JSON file on disk.
     """
-    if not isinstance(ip_addresses, pd.Series):
-        raise AttributeError("ip_addresses must be a pandas Series")
-    if ip_addresses is None or len(ip_addresses) == 0:
-        return pd.DataFrame(columns=["org", "country"])
-    else:
+    def __init__(self):
+        self._cache_dict = {}
+
+    def load_from_json(self, cache_file: str):
+        """
+        This function loads the cache from the JSON file.
+        """
+        try:
+            # Open with encoding UTF-8
+            with open(cache_file, 'r', encoding='utf-8') as f:
+                self._cache_dict = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            self._cache_dict = {}
+
+    def save_to_json(self, cache_file: str):
+        """
+        This function saves the cache to the JSON file.
+        """
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            json.dump(self._cache_dict, f)
+
+    def get_ip_infos(self, ip_address: str):
+        """
+        This function returns the organisation and country of a specific
+        IP address. If the IP address is not in the cache, it is added. The
+        information is retrieved from the get_ip_infos function.
+
+        :param ip_address: The IP address.
+        :return: The organisation and country as tuple, if available. Otherwise, a tuple with
+        Nones is returned.
+        """
+        if ip_address in self._cache_dict:
+            return self._cache_dict[ip_address]
+
+        org, country = get_ip_infos(ip_address)
+        self._cache_dict[ip_address] = (org, country)
+        return org, country
+
+    def match_ip_infos(self, ip_addresses: pd.Series):
+        """
+        This function takes a pandas Series with IP addresses and returns a
+        DataFrame with the organisation and country of each IP address.
+
+        The function uses the get_ip_infos function to retrieve the information.
+
+        :param ip_addresses: A pandas Series with IP addresses.
+        :return: A DataFrame with the organisation and country of each IP address.
+        """
+        if not isinstance(ip_addresses, pd.Series):
+            raise AttributeError("ip_addresses must be a pandas Series")
+
+        if ip_addresses is None or len(ip_addresses) == 0:
+            return pd.DataFrame(columns=["org", "country"])
+
         original_frame = ip_addresses.to_frame(name="ip")
 
         # Get unique IP addresses
         unique_addresses = list(ip_addresses.unique())
-        country = []
-        org = []
+        countries = []
+        orgs = []
 
         for ip in unique_addresses:
-            org_info, country_info = get_ip_infos(ip)
-            org.append(org_info)
-            country.append(country_info)
+            org, country = self.get_ip_infos(ip)
+            orgs.append(org)
+            countries.append(country)
 
-        unique_frame = pd.DataFrame({"ip": unique_addresses, "org": org, "country": country})
+        unique_frame = pd.DataFrame({"ip": unique_addresses, "org": orgs, "country": countries})
 
         # Merge the unique frame with the original frame so that
         # the original order is preserved

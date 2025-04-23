@@ -11,8 +11,10 @@ from netmonitor import core
 # Constants
 _WINDOW_TITLE = "netmonitor"
 _COLUMN_WIDTH = 100
-_WINDOW_WIDTH = len(core.CONNECTION_COLUMNS * _COLUMN_WIDTH) * 1.2
+_CONNECTION_COLUMNS = core.CONNECTION_COLUMNS + ['country', 'org']
+_WINDOW_WIDTH = 1100
 _WINDOW_HEIGHT = 550
+_IP_CACHE_FILE = "data/ip_infos_cache.json"
 
 
 class DataFrameTable(Gtk.TreeView):
@@ -87,8 +89,9 @@ class NetmonitorWindow(Gtk.Window):
         self.set_default_size(_WINDOW_WIDTH, _WINDOW_HEIGHT)
 
         # Create an empty connections frame
-        self.connections = pd.DataFrame(columns=core.CONNECTION_COLUMNS)
+        self.connections = pd.DataFrame(columns=_CONNECTION_COLUMNS)
         self.filtered_connections = self.connections.copy()
+        self.ip_cache = core.IpInfoCache()
 
         # Create a table to show the connections
         self.table = DataFrameTable(self.filtered_connections)
@@ -114,6 +117,14 @@ class NetmonitorWindow(Gtk.Window):
         self.private_checkbox = Gtk.CheckButton(label="Private")
         self.private_checkbox.connect("toggled", self._private_toggled)
 
+        # Create a checkbox for local ips
+        self.local_checkbox = Gtk.CheckButton(label="Local")
+        self.local_checkbox.connect("toggled", self._local_toggled)
+
+        # Create a checkbox for ip infos
+        self.ip_infos_checkbox = Gtk.CheckButton(label="Remote Infos")
+        self.ip_infos_checkbox.connect("toggled", self._ip_infos_toggled)
+
         # Create a button to export the current view to a CSV file
         export_button = Gtk.Button(label="Export CSV")
         export_button.connect("clicked", self._export_to_csv)
@@ -123,6 +134,8 @@ class NetmonitorWindow(Gtk.Window):
         hbox.pack_start(refresh_button, False, False, 0)
         hbox.pack_start(self.non_remote_checkbox, False, False, 0)
         hbox.pack_start(self.private_checkbox, False, False, 0)
+        hbox.pack_start(self.local_checkbox, False, False, 0)
+        hbox.pack_start(self.ip_infos_checkbox, False, False, 0)
         hbox.pack_end(export_button, False, False, 0)
 
         # Create a vertical box and add the horizontal box and scrolled window to it
@@ -132,6 +145,13 @@ class NetmonitorWindow(Gtk.Window):
 
         # Add the vertical box to the main window
         self.add(vbox)
+
+        # Try to load the ip infos cache
+        try:
+            self.ip_cache.load_from_json(_IP_CACHE_FILE)
+        except FileExistsError:
+            # Write a warning message
+            print("Could not load the ip infos cache. Creating a new one.")
 
         # Get connections and update the component
         self._load_connections()
@@ -178,6 +198,26 @@ class NetmonitorWindow(Gtk.Window):
     def _private_toggled(self, widget):
         """
         This function is called when the private checkbox is toggled.
+
+        :param widget: The widget that was toggled.
+        :return: None.
+        """
+        # Update the component
+        self._update_component()
+
+    def _local_toggled(self, widget):
+        """
+        This function is called when the local IPs checkbox is toggled.
+
+        :param widget: The widget that was toggled.
+        :return: None.
+        """
+        # Update the component
+        self._update_component()
+
+    def _ip_infos_toggled(self, widget):
+        """
+        This function is called when the IP infos checkbox is toggled.
 
         :param widget: The widget that was toggled.
         :return: None.
@@ -316,6 +356,28 @@ class NetmonitorWindow(Gtk.Window):
 
         self.table.set_column_visibility(
             ["rpriv"], self.private_checkbox.get_active())
+
+        # local ips
+        self.table.set_column_visibility(
+            ["lip", "lport"], self.local_checkbox.get_active())
+
+        # Rest indexes
+        self.filtered_connections.reset_index(drop=True, inplace=True)
+
+        # ip infos
+        if self.ip_infos_checkbox.get_active():
+            ip_infos = self.ip_cache.match_ip_infos(self.filtered_connections["rip"])
+            ip_infos = ip_infos.astype(str)
+            ip_infos = ip_infos.replace('None', '')
+            self.filtered_connections["country"] = ip_infos["country"]
+            self.filtered_connections["org"] = ip_infos["org"]
+            self.ip_cache.save_to_json(_IP_CACHE_FILE)
+        else:
+            self.filtered_connections["country"] = ''
+            self.filtered_connections["org"] = ''
+
+        self.table.set_column_visibility(
+            ["country", "org"], self.ip_infos_checkbox.get_active())
 
         # Update the table with the filtered DataFrame
         self.table.set_data_frame(self.filtered_connections)
