@@ -80,6 +80,46 @@ class DataFrameTable(Gtk.TreeView):
             self.append_column(column)
 
 
+class NetMonitorToolbar(Gtk.Box):
+    """
+    This class represents a toolbar with buttons and checkboxes for controlling
+    the NetMonitorWindow.
+    """
+    def __init__(self):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self._init_component()
+
+    def _init_component(self):
+        """
+        This method initializes the component.
+        """
+        # Create a refresh button
+        self.refresh_button = Gtk.Button(label="Refresh")
+
+        # Create a checkbox for non-remote connections
+        self.non_remote_checkbox = Gtk.CheckButton(label="Non-remote")
+
+        # Create a checkbox for private connections
+        self.private_checkbox = Gtk.CheckButton(label="Private")
+
+        # Create a checkbox for local ips
+        self.local_checkbox = Gtk.CheckButton(label="Local")
+
+        # Create a checkbox for ip infos
+        self.ip_infos_checkbox = Gtk.CheckButton(label="Remote Infos")
+
+        # Create a button to export the current view to a CSV file
+        self.export_button = Gtk.Button(label="Export CSV")
+
+        # Add the buttons and checkboxes to the toolbar
+        self.pack_start(self.refresh_button, False, False, 0)
+        self.pack_start(self.non_remote_checkbox, False, False, 0)
+        self.pack_start(self.private_checkbox, False, False, 0)
+        self.pack_start(self.local_checkbox, False, False, 0)
+        self.pack_start(self.ip_infos_checkbox, False, False, 0)
+        self.pack_end(self.export_button, False, False, 0)
+
+
 class NetmonitorWindow(Gtk.Window):
     """
     This class represents the main window of the netmonitor application.
@@ -105,42 +145,30 @@ class NetmonitorWindow(Gtk.Window):
         scrolled_window.set_vexpand(True)
         scrolled_window.add(self.table)
 
-        # Create a button to refresh the table
-        refresh_button = Gtk.Button(label="Refresh")
-        refresh_button.connect("clicked", self._refresh_button_clicked)
+        # Create the control panel and register events
+        self.toolbar = NetMonitorToolbar()
 
-        # Create a checkbox for non-remote connections
-        self.non_remote_checkbox = Gtk.CheckButton(label="Non-remote")
-        self.non_remote_checkbox.connect("toggled", self._non_remote_toggled)
+        self.toolbar.refresh_button.connect(
+            "clicked", self._refresh_button_clicked)
 
-        # Create a checkbox for private connections
-        self.private_checkbox = Gtk.CheckButton(label="Private")
-        self.private_checkbox.connect("toggled", self._private_toggled)
+        self.toolbar.non_remote_checkbox.connect(
+            "toggled", self._non_remote_toggled)
 
-        # Create a checkbox for local ips
-        self.local_checkbox = Gtk.CheckButton(label="Local")
-        self.local_checkbox.connect("toggled", self._local_toggled)
+        self.toolbar.private_checkbox.connect(
+            "toggled", self._private_toggled)
 
-        # Create a checkbox for ip infos
-        self.ip_infos_checkbox = Gtk.CheckButton(label="Remote Infos")
-        self.ip_infos_checkbox.connect("toggled", self._ip_infos_toggled)
+        self.toolbar.local_checkbox.connect(
+            "toggled", self._local_toggled)
 
-        # Create a button to export the current view to a CSV file
-        export_button = Gtk.Button(label="Export CSV")
-        export_button.connect("clicked", self._export_to_csv)
+        self.toolbar.ip_infos_checkbox.connect(
+            "toggled", self._ip_infos_toggled)
 
-        # Create a horizontal box and add the button to it
-        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        hbox.pack_start(refresh_button, False, False, 0)
-        hbox.pack_start(self.non_remote_checkbox, False, False, 0)
-        hbox.pack_start(self.private_checkbox, False, False, 0)
-        hbox.pack_start(self.local_checkbox, False, False, 0)
-        hbox.pack_start(self.ip_infos_checkbox, False, False, 0)
-        hbox.pack_end(export_button, False, False, 0)
+        self.toolbar.export_button.connect(
+            "clicked", self._export_to_csv)
 
         # Create a vertical box and add the horizontal box and scrolled window to it
         vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        vbox.pack_start(hbox, False, False, 0)
+        vbox.pack_start(self.toolbar, False, False, 0)
         vbox.pack_start(scrolled_window, True, True, 0)
 
         # Add the vertical box to the main window
@@ -345,27 +373,27 @@ class NetmonitorWindow(Gtk.Window):
         self.filtered_connections = self.connections.copy()
 
        # non-remote ips
-        if not self.non_remote_checkbox.get_active():
+        if not self.toolbar.non_remote_checkbox.get_active():
             self.filtered_connections = self.filtered_connections[
                 self.filtered_connections['rip'].str.len() > 0]
 
         # private ips
-        if not self.private_checkbox.get_active():
+        if not self.toolbar.private_checkbox.get_active():
             self.filtered_connections = self.filtered_connections[
                 self.filtered_connections['rpriv'] == 'False']
 
         self.table.set_column_visibility(
-            ["rpriv"], self.private_checkbox.get_active())
+            ["rpriv"], self.toolbar.private_checkbox.get_active())
 
         # local ips
         self.table.set_column_visibility(
-            ["lip", "lport"], self.local_checkbox.get_active())
+            ["lip", "lport"], self.toolbar.local_checkbox.get_active())
 
         # Rest indexes
         self.filtered_connections.reset_index(drop=True, inplace=True)
 
         # ip infos
-        if self.ip_infos_checkbox.get_active():
+        if self.toolbar.ip_infos_checkbox.get_active():
             ip_infos = self.ip_cache.match_ip_infos(self.filtered_connections["rip"])
             ip_infos = ip_infos.astype(str)
             ip_infos = ip_infos.replace('None', '')
@@ -377,7 +405,7 @@ class NetmonitorWindow(Gtk.Window):
             self.filtered_connections["org"] = ''
 
         self.table.set_column_visibility(
-            ["country", "org"], self.ip_infos_checkbox.get_active())
+            ["country", "org"], self.toolbar.ip_infos_checkbox.get_active())
 
         # Update the table with the filtered DataFrame
         self.table.set_data_frame(self.filtered_connections)
