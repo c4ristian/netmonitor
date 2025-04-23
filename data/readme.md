@@ -1,0 +1,1 @@
+This directory is used to store application data, e.g. a cache of ip addresses.
