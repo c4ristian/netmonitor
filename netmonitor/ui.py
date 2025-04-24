@@ -4,7 +4,7 @@ This module contains user interface elements for the netmonitor application.
 
 # Imports
 import pandas as pd
-from gi.repository import Gtk
+from gi.repository import Gtk, GLib
 from netmonitor import core
 
 
@@ -120,6 +120,51 @@ class NetmonitorToolbar(Gtk.Box):
         self.pack_end(self.export_button, False, False, 0)
 
 
+class WaitDialog(Gtk.Dialog):
+    """
+    This dialog shows a wait message while a process is running.
+    """
+    def __init__(self, parent):
+        super().__init__(title="Processing", parent=parent, flags=Gtk.DialogFlags.MODAL)
+        self.set_default_size(300, 100)
+
+        # Add a label with the message
+        label = Gtk.Label(label="Please wait...")
+        self.get_content_area().add(label)
+        self.show_all()
+
+    def __enter__(self):
+        """
+        Enter the context manager and show the dialog.
+        """
+        self.show()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """
+        Exit the context manager and destroy the dialog.
+        """
+        self.destroy()
+
+    def run_with_task(self, task, *args, **kwargs):
+        """
+        Run a task while showing the dialog.
+
+        :param task: The function to execute.
+        :param args: Positional arguments for the task.
+        :param kwargs: Keyword arguments for the task.
+        """
+        def wrapped_task():
+            try:
+                task(*args, **kwargs)
+            finally:
+                self.destroy()
+            return False  # Stop the idle loop
+
+        GLib.timeout_add(50, wrapped_task)
+        self.run()
+
+
 class NetmonitorWindow(Gtk.Window):
     """
     This class represents the main window of the netmonitor application.
@@ -210,8 +255,9 @@ class NetmonitorWindow(Gtk.Window):
         :return: None.
         """
         # Get connections and update the component
-        self._load_connections()
-        self._update_component()
+        with WaitDialog(parent=self) as dialog:
+            self._load_connections()
+            dialog.run_with_task(self._update_component)
 
     def _non_remote_toggled(self, widget):
         """
@@ -251,7 +297,8 @@ class NetmonitorWindow(Gtk.Window):
         :return: None.
         """
         # Update the component
-        self._update_component()
+        with WaitDialog(parent=self) as dialog:
+            dialog.run_with_task(self._update_component)
 
     def _export_to_csv(self, widget):
         """
