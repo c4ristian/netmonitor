@@ -12,6 +12,7 @@ notebooks/_backup
 tests/.pytest_cache
 tests/*.json
 data/*.json
+data/*.csv
 
 # Other Files
 *.coverage
