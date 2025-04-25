@@ -268,6 +268,16 @@ class IpInfoCache:
         cache_frame.reset_index(inplace=True)
         return cache_frame
 
+    def copy(self):
+        """
+        This method creates and returns a copy of the current IpInfoCache instance.
+        """
+        new_cache = IpInfoCache()
+        # pylint: disable=protected-access
+        # Access to protected members is ok as it is the same class
+        new_cache._cache_dict = self._cache_dict.copy()
+        return new_cache
+
     def clear(self):
         """
         This function clears the cache.

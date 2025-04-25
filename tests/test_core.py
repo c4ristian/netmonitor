@@ -214,9 +214,18 @@ def test_ip_info_cache_basics():
     if os.path.exists(file_name):
         os.remove(file_name)
 
+    # Test the copy method
+    cache_copy = cache.copy()
+    assert cache_copy is not None
+    assert isinstance(cache_copy, core.IpInfoCache)
+    assert cache_copy._cache_dict is not None
+    assert len(cache_copy._cache_dict) == 2
+    assert cache_copy._cache_dict == cache._cache_dict
+
     # Test clear function
     cache.clear()
     assert len(cache._cache_dict) == 0
+    assert cache_copy._cache_dict != cache._cache_dict
 
 
 def test_ip_info_cache_pandas():
