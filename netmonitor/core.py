@@ -253,3 +253,23 @@ class IpInfoCache:
         # the original order is preserved
         merged_frame = pd.merge(original_frame, unique_frame, on="ip", how="left")
         return merged_frame
+
+    def to_data_frame(self):
+        """
+        This function returns the cache as a DataFrame.
+        """
+        if len(self._cache_dict) == 0:
+            return pd.DataFrame(columns=["ip", "org", "country"])
+
+        # Convert the cache to a DataFrame
+        cache_frame = pd.DataFrame.from_dict(
+            self._cache_dict, orient='index', columns=["org", "country"])
+        cache_frame.index.name = "ip"
+        cache_frame.reset_index(inplace=True)
+        return cache_frame
+
+    def clear(self):
+        """
+        This function clears the cache.
+        """
+        self._cache_dict = {}

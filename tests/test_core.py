@@ -168,9 +168,10 @@ def test_get_ip_infos():
     assert country is None
 
 
-def test_ip_info_cache():
+def test_ip_info_cache_basics():
     """
-    Testcase for the class IpInfoCache.
+    Testcase for the basic features of the class IpInfoCache.
+
     :return: None.
     """
     cache = core.IpInfoCache()
@@ -192,6 +193,44 @@ def test_ip_info_cache():
 
     assert len(cache._cache_dict) == 2
     assert cache._cache_dict["20.54.232.x"] == (None, None)
+
+    # Test save and load cache
+    file_name = "_test_cache.json"
+
+    if os.path.exists("tests/"):
+        file_name = "tests/" + file_name
+
+    cache.save_to_json(file_name)
+
+    # Create a new cache and load the saved cache
+    new_cache = core.IpInfoCache()
+    new_cache.load_from_json(file_name)
+
+    assert len(new_cache._cache_dict) == 2
+    assert new_cache._cache_dict is not None
+    assert "172.217.0.0" in new_cache._cache_dict
+
+    # Cleanup stored data frame
+    if os.path.exists(file_name):
+        os.remove(file_name)
+
+    # Test clear function
+    cache.clear()
+    assert len(cache._cache_dict) == 0
+
+
+def test_ip_info_cache_pandas():
+    """
+    Testcase for the pandas related features of the class IpInfoCache.
+
+    :return: None.
+    """
+    # Create a new cache
+    cache = core.IpInfoCache()
+
+    # Fill the cache with some data
+    cache.get_ip_infos("172.217.0.0")
+    cache.get_ip_infos("20.54.232.x")
 
     # Test match ip infos
     ip_addresses = pd.Series(["172.217.0.0", "20.54.232.160", "1111"])
@@ -220,29 +259,24 @@ def test_ip_info_cache():
     assert cache._cache_dict["20.54.232.160"] == (
         second_row["org"], second_row["country"])
 
-    # Error cases
+    # Mathing error cases
     with pytest.raises(AttributeError):
         cache.match_ip_infos("172.11.80.1")
 
     with pytest.raises(AttributeError):
         cache.match_ip_infos(None)
 
-    # Test save and load cache
-    file_name = "_test_cache.json"
+    # Test data frame conversion with filled frame
+    df = cache.to_data_frame()
+    assert df is not None
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 4
+    assert list(df.columns) == ["ip", "org", "country"]
+    assert len(df[df["ip"] == "20.54.232.160"]) == 1
 
-    if os.path.exists("tests/"):
-        file_name = "tests/" + file_name
-
-    cache.save_to_json(file_name)
-
-    # Create a new cache and load the saved cache
-    new_cache = core.IpInfoCache()
-    new_cache.load_from_json(file_name)
-
-    assert len(new_cache._cache_dict) == 4
-    assert new_cache._cache_dict is not None
-    assert "172.217.0.0" in new_cache._cache_dict
-
-    # Cleanup
-    if os.path.exists(file_name):
-        os.remove(file_name)
+    # Test data frame conversion with empty frame
+    cache.clear()
+    df = cache.to_data_frame()
+    assert df is not None
+    assert isinstance(df, pd.DataFrame)
+    assert len(df) == 0
