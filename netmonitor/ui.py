@@ -24,7 +24,7 @@ class DataFrameTable(Gtk.TreeView):
     def __init__(self, data_frame):
         super().__init__()
         self.data_frame = data_frame
-        self._init_component()
+        self._populate_table()
 
     def set_data_frame(self, data_frame):
         """
@@ -61,7 +61,7 @@ class DataFrameTable(Gtk.TreeView):
         for row in self.data_frame.itertuples(index=False):
             self.liststore.append(list(row))
 
-    def _init_component(self):
+    def _populate_table(self):
         """
         This method initializes the component.
         """
@@ -87,12 +87,7 @@ class NetmonitorToolbar(Gtk.Box):
     """
     def __init__(self):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-        self._init_component()
 
-    def _init_component(self):
-        """
-        This method initializes the component.
-        """
         # Create a refresh button
         self.refresh_button = Gtk.Button(label="Refresh")
 
