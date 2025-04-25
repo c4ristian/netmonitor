@@ -24,7 +24,7 @@ class DataFrameTable(Gtk.TreeView):
     def __init__(self, data_frame):
         super().__init__()
         self.data_frame = data_frame
-        self._populate_table()
+        self._init_component()
 
     def set_data_frame(self, data_frame):
         """
@@ -61,9 +61,10 @@ class DataFrameTable(Gtk.TreeView):
         for row in self.data_frame.itertuples(index=False):
             self.liststore.append(list(row))
 
-    def _populate_table(self):
+    def _init_component(self):
         """
-        This method initializes the component.
+        This method initializes the component by creating a ListStore
+        and setting up the columns.
         """
         # Create a column for each DataFrame column
         for i, column_title in enumerate(self.data_frame.columns):
