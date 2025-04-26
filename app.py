@@ -38,7 +38,7 @@ class App:
         self.splash_window.show_all()
 
         # Close splash screen after a while and show the main window
-        GLib.timeout_add(2500, self.show_main_window)
+        GLib.timeout_add(2000, self.show_main_window)
 
     def show_main_window(self):
         """
