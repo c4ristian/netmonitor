@@ -67,12 +67,15 @@ class DataFrameTable(Gtk.TreeView):
         This method initializes the component by creating a ListStore
         and setting up the columns.
         """
+        # Create a ListStore with the same number of columns as the DataFrame
+        self.liststore = Gtk.ListStore(*(str,) * len(self.data_frame.columns))
+
+        # Wrap the ListStore in a TreeModelSort
+        sorted_model = Gtk.TreeModelSort(model=self.liststore)
+        self.set_model(sorted_model)
+
         # Create a column for each DataFrame column
         for i, column_title in enumerate(self.data_frame.columns):
-            # Create a ListStore with the same number of columns as the DataFrame
-            self.liststore = Gtk.ListStore(*(str,) * len(self.data_frame.columns))
-            self.set_model(self.liststore)
-
             renderer = Gtk.CellRendererText()
             renderer.set_property("xalign", 1.0)
             column = Gtk.TreeViewColumn(column_title, renderer, text=i)
@@ -318,9 +321,15 @@ class NetmonitorWindow(Gtk.Window):
         :param column: The column that was double-clicked.
         :return: None.
         """
-        # Get the selected row number and show dialog
-        row_number = path.get_indices()[0]
-        self._show_details_dialog(row_number)
+        # Convert the sorted path to the original path
+        model = self.table.get_model()
+        original_path = model.convert_path_to_child_path(path)
+
+        # Retrieve the original index from the original path
+        original_index = original_path.get_indices()[0]
+
+        # Show the details dialog for the correct row
+        self._show_details_dialog(original_index)
 
     # pylint: disable=unused-argument
     # Argument is necessary for the function to work
