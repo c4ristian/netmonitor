@@ -14,7 +14,7 @@ _COLUMN_WIDTH = 100
 _CONNECTION_COLUMNS = core.CONNECTION_COLUMNS + ['country', 'org']
 _WINDOW_WIDTH = 1100
 _WINDOW_HEIGHT = 550
-_IP_CACHE_FILE = "data/ip_infos_cache.json"
+_IP_CACHE_FILE = "data/ip_info_cache.json"
 
 
 class DataFrameTable(Gtk.TreeView):
@@ -25,6 +25,7 @@ class DataFrameTable(Gtk.TreeView):
         super().__init__()
         self.data_frame = data_frame
         self._init_component()
+        self._update_component()
 
     def set_data_frame(self, data_frame):
         """
@@ -81,41 +82,6 @@ class DataFrameTable(Gtk.TreeView):
             self.append_column(column)
 
 
-class NetmonitorToolbar(Gtk.Box):
-    """
-    This class represents a toolbar with buttons and checkboxes for controlling
-    the NetMonitorWindow.
-    """
-    def __init__(self):
-        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
-
-        # Create a refresh button
-        self.refresh_button = Gtk.Button(label="Refresh")
-
-        # Create a checkbox for non-remote connections
-        self.non_remote_checkbox = Gtk.CheckButton(label="Non-remote")
-
-        # Create a checkbox for private connections
-        self.private_checkbox = Gtk.CheckButton(label="Private")
-
-        # Create a checkbox for local ips
-        self.local_checkbox = Gtk.CheckButton(label="Local")
-
-        # Create a checkbox for ip infos
-        self.ip_infos_checkbox = Gtk.CheckButton(label="Remote Infos")
-
-        # Create a button to export the current view to a CSV file
-        self.export_button = Gtk.Button(label="Export CSV")
-
-        # Add the buttons and checkboxes to the toolbar
-        self.pack_start(self.refresh_button, False, False, 0)
-        self.pack_start(self.non_remote_checkbox, False, False, 0)
-        self.pack_start(self.private_checkbox, False, False, 0)
-        self.pack_start(self.local_checkbox, False, False, 0)
-        self.pack_start(self.ip_infos_checkbox, False, False, 0)
-        self.pack_end(self.export_button, False, False, 0)
-
-
 class WaitDialog(Gtk.Dialog):
     """
     This dialog shows a wait message while a process is running.
@@ -161,6 +127,118 @@ class WaitDialog(Gtk.Dialog):
         self.run()
 
 
+class IpInfoCacheDialog(Gtk.Dialog):
+    """
+    This class represents a dialog for managing an IpInfoCache.
+    """
+    def __init__(self, ip_cache: core.IpInfoCache, parent=None):
+        super().__init__(title="IP cache", parent=parent, flags=Gtk.DialogFlags.MODAL)
+        self.set_default_size(750, 300)
+        self.ip_cache = ip_cache
+        self.cache_frame = self.ip_cache.to_data_frame()
+
+        # Create a DataFrameTable to display the cache entries
+        self.table = DataFrameTable(self.cache_frame)
+
+        # Add a ScrolledWindow for the table
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_vexpand(True)
+        scrolled_window.add(self.table)
+
+        # Create a toolbar with the "Clear Cache" button
+        toolbar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        clear_button = Gtk.Button(label="Clear Cache")
+        clear_button.connect("clicked", self._clear_cache)
+        toolbar.pack_start(clear_button, False, False, 0)
+
+        # Create a status bar with a centered label
+        self.entries_label = Gtk.Label(label=f"Records: {len(self.cache_frame)}")
+        file_label = Gtk.Label(label=f"File: {_IP_CACHE_FILE}")
+
+        status_bar = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        status_bar.pack_start(self.entries_label, True, True, 10)
+        status_bar.pack_start(file_label, True, True, 10)
+
+        # Add OK and Cancel buttons
+        self.add_button(Gtk.STOCK_OK, Gtk.ResponseType.OK)
+        self.add_button(Gtk.STOCK_CANCEL, Gtk.ResponseType.CANCEL)
+
+        # Layout
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vbox.pack_start(toolbar, False, False, 0)  # Add toolbar at the top
+        vbox.pack_start(scrolled_window, True, True, 0)
+        vbox.pack_start(status_bar, False, False, 7)  # Add status bar at the bottom
+        self.get_content_area().add(vbox)
+
+        self.show_all()
+
+    # pylint: disable=unused-argument
+    # Argument is necessary for the function to work
+    def _clear_cache(self, widget):
+        """
+        This function is called when the "Clear Cache" button is clicked.
+
+        :param widget: The widget that was clicked.
+        :return: None.
+        """
+        # Create a confirmation dialog
+        dialog = Gtk.MessageDialog(
+            parent=self,
+            flags=Gtk.DialogFlags.MODAL,
+            type=Gtk.MessageType.QUESTION,
+            buttons=Gtk.ButtonsType.YES_NO,
+            message_format="Are you sure you want to clear the cache?"
+        )
+        response = dialog.run()
+        dialog.destroy()
+
+        # If the user confirms, clear the cache
+        if response == Gtk.ResponseType.YES:
+            self.ip_cache.clear()
+            self.cache_frame = self.ip_cache.to_data_frame()
+            self.table.set_data_frame(self.cache_frame)
+            self.entries_label.set_text(f"Records: {len(self.cache_frame)}")
+
+
+class NetmonitorToolbar(Gtk.Box):
+    """
+    This class represents a toolbar with buttons and checkboxes for controlling
+    the NetMonitorWindow.
+    """
+    def __init__(self):
+        super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+
+        # Create a refresh button
+        self.refresh_button = Gtk.Button(label="Refresh")
+
+        # Create a checkbox for non-remote connections
+        self.non_remote_checkbox = Gtk.CheckButton(label="Non-remote")
+
+        # Create a checkbox for private connections
+        self.private_checkbox = Gtk.CheckButton(label="Private")
+
+        # Create a checkbox for local ips
+        self.local_checkbox = Gtk.CheckButton(label="Local")
+
+        # Create a checkbox for ip infos
+        self.ip_infos_checkbox = Gtk.CheckButton(label="Remote Infos")
+
+        # Create a button to manage the ip info cache
+        self.cache_button = Gtk.Button(label="Cache...")
+
+        # Create a button to export the current view to a CSV file
+        self.export_button = Gtk.Button(label="Export...")
+
+        # Add the buttons and checkboxes to the toolbar
+        self.pack_start(self.refresh_button, False, False, 0)
+        self.pack_start(self.non_remote_checkbox, False, False, 0)
+        self.pack_start(self.private_checkbox, False, False, 0)
+        self.pack_start(self.local_checkbox, False, False, 0)
+        self.pack_start(self.ip_infos_checkbox, False, False, 0)
+        self.pack_end(self.export_button, False, False, 0)
+        self.pack_end(self.cache_button, False, False, 0)
+
+
 class NetmonitorWindow(Gtk.Window):
     """
     This class represents the main window of the netmonitor application.
@@ -203,6 +281,9 @@ class NetmonitorWindow(Gtk.Window):
 
         self.toolbar.ip_infos_checkbox.connect(
             "toggled", self._ip_infos_toggled)
+
+        self.toolbar.cache_button.connect(
+            "clicked", self._show_cache_dialog)
 
         self.toolbar.export_button.connect(
             "clicked", self._export_to_csv)
@@ -295,6 +376,24 @@ class NetmonitorWindow(Gtk.Window):
         # Update the component
         with WaitDialog(parent=self) as dialog:
             dialog.run_with_task(self._update_component)
+
+    def _show_cache_dialog(self, widget):
+        """
+        This function is called when the cache button is clicked.
+
+        :param widget: The widget that was clicked.
+        :return: None.
+        """
+        cache_copy = self.ip_cache.copy()
+        dialog = IpInfoCacheDialog(cache_copy, self)
+        response = dialog.run()
+        dialog.destroy()
+
+        # If the user clicked OK, update the main cache
+        if response == Gtk.ResponseType.OK:
+            # Update the main cache with the modified copy
+            self.ip_cache = cache_copy
+            self.ip_cache.save_to_json(_IP_CACHE_FILE)
 
     def _export_to_csv(self, widget):
         """

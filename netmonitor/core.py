@@ -266,6 +266,7 @@ class IpInfoCache:
             self._cache_dict, orient='index', columns=["org", "country"])
         cache_frame.index.name = "ip"
         cache_frame.reset_index(inplace=True)
+        cache_frame = cache_frame[["ip", "country", "org"]]
         return cache_frame
 
     def copy(self):

@@ -280,7 +280,7 @@ def test_ip_info_cache_pandas():
     assert df is not None
     assert isinstance(df, pd.DataFrame)
     assert len(df) == 4
-    assert list(df.columns) == ["ip", "org", "country"]
+    assert list(df.columns) == ["ip", "country", "org"]
     assert len(df[df["ip"] == "20.54.232.160"]) == 1
 
     # Test data frame conversion with empty frame
