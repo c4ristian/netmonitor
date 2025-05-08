@@ -1,4 +1,4 @@
-# netmonitor
+![Splash Screen](data/splash.png)
 
 ## What is it?
 GKT application to monitor network connections.
